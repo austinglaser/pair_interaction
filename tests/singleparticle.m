@@ -12,7 +12,7 @@
 %       - File configuration
 %       - List of input folders
 
-prefs = read_prefs('./configuration.ini');
+prefs = read_config('./configuration.ini');
 
 % Split data into bins
 
