@@ -1,0 +1,10 @@
+# Mac hidden files
+.DS_Store
+
+# temp files
+*~
+.*.swp
+
+# Misc files
+KOJA/
+tests/videos/
