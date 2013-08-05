@@ -20,47 +20,61 @@ function config = read_config(config_file)
 
     fclose(config_id);
     
-    %default values, overwritten if present in config file
-    config.framerate = 24;
-    config.x_cal = 1;
-    config.y_cal = 1;
-    config.frame_col = 1;
-    config.x_col = 2;
-    config.y_col = 3;
+    %search for values
     
-    for i = 1:size(raw_config, 1)
-        switch raw_config{i,1}
-            case 'folders'
-                config.folders = raw_config{i,2};
-                config.folders = strsplit(config.folders,',');
-                
-            case 'framerate'
-                temp = str2double(raw_config{i,2});
-                if ~isnan(temp)
-                    config.framerate = temp;
-                else
-                    fprintf('Invalid value for option "%s." Using default value of %f', ...
-                             raw_config{i,1}, config.framerate);
-                end
-                
-            case 'x_cal'
-                temp = str2double(raw_config{i,2});
-                if ~isnan(temp)
-                    config.x_cal = temp;
-                else
-                    fprintf('Invalid value for option "%s." Using default value of %f', ...
-                             raw_config{i,1}, config.x_cal);
-                end
-            case 'y_cal'
-                config.y_cal = str2double(raw_config{i,2});
-            case 'frame_col'
-                config.frame_col = str2double(raw_config{i,2});
-            case 'x_col'
-                config.x_col = str2double(raw_config{i,2});
-            case 'y_col'
-                config.y_col = str2double(raw_config{i,2});
-            otherwise
-                fprintf('Unrecognized option "%s." Ignoring.\n', raw_config{i,1});
-        end
+    i = find(strcmp(raw_config, 'folders'));
+    if isempty(i)
+        error('read_config:folders', 'No input folder specified (add the line "folders = path1, path2, ... , pathn" to the configuration file');
+    else
+        config.folders = raw_config{i,2};
+        config.folders = strsplit(config.folders,',');
+    end
+    
+    i = find(strcmp(raw_config, 'framerate'));
+    if isempty(i)
+        config.framerate = 10;
+        warning('read_config:framerate','Framerate unspecified: defaulting to 24 fps');
+    else
+        config.framerate = str2double(raw_config{i,2});
+    end
+    
+    i = find(strcmp(raw_config, 'x_scale'));
+    if isempty(i)
+        config.x_scale = 1;
+        warning('read_config:x_scale','X scale unspecified: defaulting to 1 um/pix');
+    else
+        config.x_scale = str2double(raw_config{i,2});
+    end
+    
+    i = find(strcmp(raw_config, 'y_scale'));
+    if isempty(i)
+        config.y_scale = 1;
+        warning('read_config:x_scale','Y scale unspecified: defaulting to 1 um/pix');
+    else
+        config.y_scale = str2double(raw_config{i,2});
+    end
+    
+    i = find(strcmp(raw_config, 'frame_col'));
+    if isempty(i)
+        config.frame_col = 1;
+        warning('read_config:x_scale','Column for frame data unspecified: defaulting to column 1');
+    else
+        config.frame_col = str2double(raw_config{i,2});
+    end
+    
+    i = find(strcmp(raw_config, 'x_col'));
+    if isempty(i)
+        config.x_col = 2;
+        warning('read_config:x_scale','Column for x position data unspecified: defaulting to column 2');
+    else
+        config.x_col = str2double(raw_config{i,2});
+    end
+    
+    i = find(strcmp(raw_config, 'y_col'));
+    if isempty(i)
+        config.y_col = 3;
+        warning('read_config:x_scale','Column for y position data unspecified: defaulting to column 3');
+    else
+        config.y_col = str2double(raw_config{i,2});
     end
 end
