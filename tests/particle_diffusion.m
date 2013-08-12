@@ -15,7 +15,7 @@ function particle_diffusion(config_file)
 
     config = read_config(config_file,exp_options);
 
-    %Analyze data
+    Analyze data
     for i = 1:size(config.folders,2)
         % load file
         path = config.folders{i};

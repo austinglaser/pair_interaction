@@ -34,40 +34,48 @@ function analyze_file(filename, filepath, config)
     x = x - x(1);
     y = y - y(1);
     r2 = x.^2 + y.^2;
-    r = sqrt(r2);
     
-    slope = sum(r2)/sum(t);
-    line = slope*t;
-    coeff = slope/4;
+
+%     slope = sum(r2)/sum(t);
+%     line = slope*t;
+%     coeff = slope/4;
     
     intervals = linspace(min(t),max(t),config.n_bins+1);
     binned_t = cell(config.n_bins,1);
-    binned_x = cell(config.n_bins,1);
-    binned_y = cell(config.n_bins,1);
+    binned_r2 = binned_t;
     
+
+    figure()
+    hold all
     for i = 2:config.n_bins + 1
         range = (t >= intervals(i-1)) & (t < intervals(i));
         if i == config.n_bins + 1
             range = range | t == intervals(i);
         end
-        binned_t{i-1} = t(range);
-        binned_x{i-1} = x(range);
-        binned_y{i-1} = y(range);
+        
+        [curr_bin_t,sorted_inds]  = sort(t(range));
+        
+        curr_bin_r2 = r2(range);
+        curr_bin_r2 = curr_bin_r2(sorted_inds);
+        binned_t{i-1} = curr_bin_t - curr_bin_t(1);
+        binned_r2{i-1} = curr_bin_r2 - curr_bin_r2(1);
+        
+        plot(binned_t{i-1},binned_r2{i-1},'b')
     end
     
+   
     
-    
-    figure()
-    hold all
-    plot(t,r2)
-    plot(t,line)
-    plot_title = sprintf('Squared displacement vs. time.\nDiffusion Coefficient: %2.5f', coeff);
-    title(plot_title)
+%     figure()
+%     hold all
+%     plot(t,r2)
+%     plot(t,line) 
+%     plot_title = sprintf('Squared displacement vs. time.\nDiffusion Coefficient: %2.5f', coeff);
+%     title(plot_title)
     
     
     %print results
     fprintf(result_file, 'Results from analyzing %s\n', filename);
-    fprintf(result_file, 'Diffusion coefficient: %f um^2/s',coeff);
+%     fprintf(result_file, 'Diffusion coefficient: %f um^2/s',coeff);
     
     
     fclose(result_file);

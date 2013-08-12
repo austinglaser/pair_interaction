@@ -30,9 +30,9 @@ function config = read_config(config_filename,exp_options)
         current_line = strtrim(current_line);
         if (length(current_line) >= 1) && (current_line(1) ~= '#')
             current_line = current_line(current_line ~= ' ');
-            [current_option,split] = strsplit(current_line, {'=',':'});
+            current_option = strsplit(current_line, '=');
             
-            raw_config(i,:) = [current_option,split];
+            raw_config(i,:) = current_option;
             i = i + 1;
         end
         current_line = fgetl(config_file);
@@ -50,12 +50,15 @@ function config = read_config(config_filename,exp_options)
         if ~isempty(opt)
             
             % check whether it should be treated as a number or a string
-            sep = raw_config{opt,3};
+            option = raw_config{opt,2};
+            isstring = ((option(1) == '"') && (option(end) == '"'));
             
-            if sep == '='
-                val = str2num(raw_config{opt,2});
-            elseif sep == ':'
-                val = strsplit(raw_config{opt,2},',');
+            if isstring
+                val = option(option ~= '"');
+                val = strsplit(val,',');
+                
+            else
+                val = str2num(option);
             end
             
             % remove the relevant line
@@ -65,7 +68,7 @@ function config = read_config(config_filename,exp_options)
         end
         
         % check for invalid option
-        if isempty(opt) || ((sep == '=') && isnan(val))
+        if isempty(opt) || (~isstring && isnan(val))
             
             % throw warning or error
             if isempty(exp_options{i,2})
