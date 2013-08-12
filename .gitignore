@@ -8,3 +8,4 @@
 # Misc files
 KOJA/
 tests/videos/
+*_results/

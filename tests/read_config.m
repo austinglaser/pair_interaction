@@ -1,118 +1,112 @@
-function config = read_config(config_file)
-% Utility for reading preferences from .ini file
+function config = read_config(config_filename,exp_options)
+%READ_CONFIG Reads options from a .ini file, storing them as a struct
+%
+% SYNOPSIS: config = read_config(config_file,exp_options)
+%
+% INPUT  config_file: The path to a properly formatted .ini file
+%        exp_options: The options expected to be present in the
+%                     configuration file
+%
+% OUTPUT config: A struct with a field for each option present
+%
+% Reads program configuration from an .ini file. This is a text file, where each
+% nonblank, noncommented line corresponds to an available option.
+%
+% exp_options is a cell array of available options. Each row of the array
+% is of the format {'opt_name', default_value}. If default value is an
+% empty array, the option will cause the program to halt if it is not
+% present in the configuration file.
+%
+% More detailed help is in the <a href="matlab: help read_config>extended_help">extended help</a>.
 
-    config_id = fopen(config_file, 'r');
+    config_file = fopen(config_filename, 'r');
 
+    % Read in raw data from the configuration file
     i = 1;
     raw_config = {};
-    current_line = fgetl(config_id);
+    current_line = fgetl(config_file);
     while ischar(current_line)
-        % Don't look at comments or blank lines
+        % Don't look at blank lines or comments
+        current_line = strtrim(current_line);
         if (length(current_line) >= 1) && (current_line(1) ~= '#')
-            current_line(ismember(current_line,' ')) = [];
-            current_option = strsplit(current_line, '=');
+            current_line = current_line(current_line ~= ' ');
+            [current_option,split] = strsplit(current_line, {'=',':'});
             
-            raw_config(i,:) = current_option;
+            raw_config(i,:) = [current_option,split];
             i = i + 1;
         end
-        current_line = fgetl(config_id);
+        current_line = fgetl(config_file);
     end
 
-    fclose(config_id);
+    fclose(config_file);
     
     %search for values
     
-    found = zeros(size(raw_config, 1), 1);
-    
-    i = find(strcmp(raw_config, 'folders'));
-    if isempty(i)
-        error('read_config:folders', 'No input folder specified (add the line "folders = path1, path2, ... , pathn" to the configuration file)');
-    else
-        config.folders = raw_config{i,2};
-        config.folders = strsplit(config.folders,',');
-        found(i) = 1;
-    end
-    
-    i = find(strcmp(raw_config, 'framerate'));
-    if isempty(i)
-        config.framerate = 10;
-        warning('read_config:framerate','Framerate unspecified: defaulting to 24 fps');
-    else
-        config.framerate = str2double(raw_config{i,2});
-        if isnan(config.framerate)
-            warning('read_config:framerate','Framerate invalid: defaulting to 24 fps');
+    for i = 1:size(exp_options,1)
+        % look for the current option
+        opt = find(strcmp(raw_config,exp_options{i,1}));
+        
+        % if it's present
+        if ~isempty(opt)
+            
+            % check whether it should be treated as a number or a string
+            sep = raw_config{opt,3};
+            
+            if sep == '='
+                val = str2num(raw_config{opt,2});
+            elseif sep == ':'
+                val = strsplit(raw_config{opt,2},',');
+            end
+            
+            % remove the relevant line
+            index = true(1,size(raw_config,1));
+            index(opt) = false;
+            raw_config = raw_config(index,:);
+        end
+        
+        % check for invalid option
+        if isempty(opt) || ((sep == '=') && isnan(val))
+            
+            % throw warning or error
+            if isempty(exp_options{i,2})
+                error('read_config:opt_not_set','Option "%s" not set or set to invalid value.',exp_options{i,1});
+            else
+                config.(exp_options{i,1}) = exp_options{i,2};
+                warning('read_config:opt_not_set','Option "%s" not set or set to invalid value. Setting to default value of %d', exp_options{i,2});
+            end
         else
-            found(i) = 1;
+            config.(exp_options{i,1}) = val;
         end
     end
     
-    i = find(strcmp(raw_config, 'x_scale'));
-    if isempty(i)
-        config.x_scale = 1;
-        warning('read_config:x_scale','X scale unspecified: defaulting to 1 um/pixel');
-    else
-        config.x_scale = str2double(raw_config{i,2});
-        if isnan(config.x_scale)
-            warning('read_config:x_scale','X scale invalid: defaulting to 1 um/pixel');
-        else
-            found(i) = 1;
-        end
+    for i = 1:size(raw_config,1)
+        warning('read_config:unrecognized_opt','Option "%s" not recognized. Ignoring.', raw_config{i,1});
     end
-    
-    i = find(strcmp(raw_config, 'y_scale'));
-    if isempty(i)
-        config.y_scale = 1;
-        warning('read_config:y_scale','Y scale unspecified: defaulting to 1 um/pixel');
-    else
-        config.y_scale = str2double(raw_config{i,2});
-        if isnan(config.y_scale)
-            warning('read_config:y_scale','Y scale invalid: defaulting to 1 um/pixel');
-        else
-            found(i) = 1;
-        end
-    end
-    
-    i = find(strcmp(raw_config, 'frame_col'));
-    if isempty(i)
-        config.frame_col = 1;
-        warning('read_config:frame_col','Column for frame data unspecified: defaulting to column 1');
-    else
-        config.frame_col = str2double(raw_config{i,2});
-        if isnan(config.frame_col)
-            warning('read_config:frame_col','Column for frame data invalid: defaulting to column 1');
-        else
-            found(i) = 1;
-        end
-    end
-    
-    i = find(strcmp(raw_config, 'x_col'));
-    if isempty(i)
-        config.x_col = 2;
-        warning('read_config:x_col','Column for x position data unspecified: defaulting to column 2');
-    else
-        config.x_col = str2double(raw_config{i,2});
-        if isnan(config.x_col)
-            warning('read_config:x_col','Column for x position data invalid: defaulting to column 2');
-        else
-            found(i) = 1;
-        end
-    end
-    
-    i = find(strcmp(raw_config, 'y_col'));
-    if isempty(i)
-        config.y_col = 3;
-        warning('read_config:y_col','Column for y position data unspecified: defaulting to column 3');
-    else
-        config.y_col = str2double(raw_config{i,2});
-        if isnan(config.framerate)
-            warning('read_config:y_col','Column for y position data invalid: defaulting to column 3');
-        ene
-            found(i) = 1;
-        end
-    end
-    
-    for i = find(~found)
-        msg = sprintf('Unrecognized option %s. Ignoring.', raw_config{i,1});
-        warning('read_config:unrecognized',msg);
-    end
+end
+
+function extended_help
+% An example configuration file:
+%
+% # This is a comment
+% # String options are denoted using colons, and fields separated by commas
+% str_opt: hello,there
+% 
+% # Numerical options are denoted with equal signs.
+% # They can be scalars, or MATLAB matrices
+% num_opt = 5
+% arr_opt = [1 2; 3 4]
+%
+% The corresponding expected options (exp_options) cell array:
+%
+% exp_options = {...
+%                'str_opt', 'hi!'; ...
+%                'num_opt',  20; ...
+%                'arr_opt', [] ...
+%               };
+%
+% In this example, arr_opt is a 'fatal' option; that is, if it is not
+% specified in the configuration file, it will cause the entire program to
+% halt.
+
+    error('Just used to display help')
 end
