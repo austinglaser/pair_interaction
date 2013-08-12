@@ -91,8 +91,9 @@ function extended_help
 % An example configuration file:
 %
 % # This is a comment
-% # String options are denoted using colons, and fields separated by commas
-% str_opt: hello,there
+% # String options are denoted by quotation marks, and fields separated by
+% # commas
+% str_opt = "hello","there"
 % 
 % # Numerical options are denoted with equal signs.
 % # They can be scalars, or MATLAB matrices
