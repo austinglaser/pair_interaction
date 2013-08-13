@@ -30,9 +30,8 @@ function config = read_config(config_filename,exp_options)
         current_line = strtrim(current_line);
         if (length(current_line) >= 1) && (current_line(1) ~= '#')
             current_line = current_line(current_line ~= ' ');
-            current_option = strsplit(current_line, '=');
+            raw_config(i,:) = strsplit(current_line, '=');
             
-            raw_config(i,:) = current_option;
             i = i + 1;
         end
         current_line = fgetl(config_file);
@@ -102,10 +101,10 @@ function extended_help
 %
 % The corresponding expected options (exp_options) cell array:
 %
-% exp_options = {...
-%                'str_opt', 'hi!'; ...
-%                'num_opt',  20; ...
-%                'arr_opt', [] ...
+% exp_options = {
+%                'str_opt', 'hi!';
+%                'num_opt',  20;
+%                'arr_opt', []
 %               };
 %
 % In this example, arr_opt is a 'fatal' option; that is, if it is not
