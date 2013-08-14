@@ -1,5 +1,42 @@
-function analyze_file(filename, filepath, config)  
-    [t x y] = open_file(filename, filepath, config);
+function analyze_file(filename, filepath, config)
+    data_filename   = [filepath filename];
+    result_folder   = [data_filename '_results/'];
+    result_filename = [result_folder filename '_results.txt'];
+    
+    if ~exist(result_folder, 'file')
+        mkdir(result_folder);
+    end
+    
+    result_file = fopen(result_filename, 'w');
+    data_file = fopen(data_filename, 'r');
+    
+    %load in data
+    deltat = 1/config.framerate;
+    t = [];
+    x = [];
+    y = [];
+    i = 1;
+    
+    current_line = fgetl(data_file);
+    while ischar(current_line)
+        raw_data = str2num(current_line);
+        t(i) = (raw_data(config.frame_col))*deltat;
+        x(i) = raw_data(config.x_col)*config.x_scale;
+        y(i) = raw_data(config.y_col)*config.y_scale;
+        
+        current_line = fgetl(data_file);
+        i = i + 1;
+    end
+    
+    % sort by t
+    [t, inds] = sort(t);
+    x = x(inds);
+    y = y(inds);
+    
+    % normalize
+    t = t - t(1);
+    x = x - x(1);
+    y = y - y(1);
     
     %analyze data
     max_steps = 25;
@@ -68,45 +105,4 @@ function analyze_file(filename, filepath, config)
     
     fclose(result_file);
     fclose(data_file);
-end
-
-function [t x y] = open_file(filename,filepath,config)
-    data_filename   = [filepath filename];
-    result_folder   = [data_filename '_results/'];
-    result_filename = [result_folder filename '_results.txt'];
-    
-    if ~exist(result_folder, 'file')
-        mkdir(result_folder);
-    end
-    
-    result_file = fopen(result_filename, 'w');
-    data_file = fopen(data_filename, 'r');
-    
-    %load in data
-    deltat = 1/config.framerate;
-    t = [];
-    x = [];
-    y = [];
-    i = 1;
-    
-    current_line = fgetl(data_file);
-    while ischar(current_line)
-        raw_data = str2num(current_line);
-        t(i) = (raw_data(config.frame_col))*deltat;
-        x(i) = raw_data(config.x_col)*config.x_scale;
-        y(i) = raw_data(config.y_col)*config.y_scale;
-        
-        current_line = fgetl(data_file);
-        i = i + 1;
-    end
-    
-    % sort by t
-    [t, inds] = sort(t);
-    x = x(inds);
-    y = y(inds);
-    
-    % normalize
-    t = t - t(1);
-    x = x - x(1);
-    y = y - y(1);
 end
