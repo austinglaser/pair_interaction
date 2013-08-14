@@ -28,7 +28,7 @@ function [coeff,drift] = analyze_file(filename, filepath, config)
     y = y - y(1);
     
     %analyze data
-    max_step = 25;
+    n_steps = 25;
     
     n_bins = floor(size(t,2)/config.bin_size);
     
@@ -50,41 +50,39 @@ function [coeff,drift] = analyze_file(filename, filepath, config)
         y_binned(i,:) = y(binstart:binend) - y(binstart);
     end
     
-    velocity_x = zeros(n_bins,max_step);
-    velocity_y = zeros(n_bins,max_step);
+    velocity_x = zeros(n_bins,n_steps);
+    velocity_y = zeros(n_bins,n_steps);
     
-    variance_x = zeros(n_bins,max_step);
-    variance_y = zeros(n_bins,max_step);
+    variance_x = zeros(n_bins,n_steps);
+    variance_y = zeros(n_bins,n_steps);
     
-    diffusion_x = zeros(n_bins,max_step);
-    diffusion_y = zeros(n_bins,max_step);
+    diffusion_x = zeros(n_bins,n_steps);
+    diffusion_y = zeros(n_bins,n_steps);
     
-    for bin = 1:n_bins
-        for step = 1:max_step
-            endpoint_x = x_binned(bin,1:step:end);
-            endpoint_y = y_binned(bin,1:step:end);
-            startpoint_x = [0 endpoint_x(1:(end-1))];
-            startpoint_y = [0 endpoint_y(1:(end-1))];
-            disp_x = endpoint_x - startpoint_x;
-            disp_y = endpoint_y - startpoint_y;
-            
-            interval = step*delta_t;
-            
-            offset_x = mean(disp_x);
-            offset_y = mean(disp_y);
-            
-            velocity_x(bin,step) = offset_x/interval;
-            velocity_y(bin,step) = offset_y/interval;
-            
-            velocity_corrected_x = disp_x - offset_x;
-            velocity_corrected_y = disp_y - offset_y;
-            
-            variance_x(bin,step) = var(velocity_corrected_x);
-            variance_y(bin,step) = var(velocity_corrected_y);
-            
-            diffusion_x(bin,step) = variance_x(bin,step)/(2*interval);
-            diffusion_y(bin,step) = variance_y(bin,step)/(2*interval);
-        end
+    for step = 1:n_steps
+        endpoint_x = x_binned(:,1:step:end);
+        endpoint_y = y_binned(:,1:step:end);
+        startpoint_x = [zeros(n_bins,1) endpoint_x(:,1:(end-1))];
+        startpoint_y = [zeros(n_bins,1) endpoint_y(:,1:(end-1))];
+        disp_x = endpoint_x - startpoint_x;
+        disp_y = endpoint_y - startpoint_y;
+
+        interval = step*delta_t;
+
+        offset_x = mean(disp_x,2);
+        offset_y = mean(disp_y,2);
+
+        velocity_x(:,step) = offset_x/interval;
+        velocity_y(:,step) = offset_y/interval;
+        
+        velocity_corrected_x = disp_x - repmat(offset_x,1,size(disp_x,2));
+        velocity_corrected_y = disp_y - repmat(offset_y,1,size(disp_y,2));
+
+        variance_x(:,step) = var(velocity_corrected_x,[],2);
+        variance_y(:,step) = var(velocity_corrected_y,[],2);
+
+        diffusion_x(:,step) = variance_x(:,step)/(2*interval);
+        diffusion_y(:,step) = variance_y(:,step)/(2*interval);
     end
     
     error_factor = 1/sqrt(n_bins);
