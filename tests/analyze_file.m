@@ -1,4 +1,4 @@
-function analyze_file(filename, filepath, config)
+function [coeff,drift] = analyze_file(filename, filepath, config)
     data_filename   = [filepath filename];
     result_folder   = [data_filename '_results/'];
     result_filename = [result_folder filename '_results.txt'];
@@ -49,6 +49,10 @@ function analyze_file(filename, filepath, config)
         t_binned(n_bins,:) = t(binstart:binend);
         x_binned(n_bins,:) = x(binstart:binend);
         y_binned(n_bins,:) = y(binstart:binend);
+        
+        t_binned(n_bins,:) = t_binned(n_bins,:) - t_binned(n_bins,1);
+        x_binned(n_bins,:) = x_binned(n_bins,:) - x_binned(n_bins,1);
+        y_binned(n_bins,:) = y_binned(n_bins,:) - y_binned(n_bins,1);
     end
     
     if (n_bins == 0)
@@ -73,7 +77,7 @@ function analyze_file(filename, filepath, config)
             disp_x = endpoint_x - startpoint_x;
             disp_y = endpoint_y - startpoint_y;
             
-            interval = step*deltat;
+            interval = step*(t(2) - t(1));
             
             offset_x = mean(disp_x);
             offset_y = mean(disp_y);
@@ -94,18 +98,18 @@ function analyze_file(filename, filepath, config)
     
     error_factor = 1/sqrt(n_bins);
 
-    coeff_x = mean(mean(diffusion_x));
-    coeff_y = mean(mean(diffusion_y));
-    coeff_error_x = error_factor*std(mean(diffusion_x));
-    coeff_error_y = error_factor*std(mean(diffusion_y));
+    coeff.x = mean(mean(diffusion_x));
+    coeff.y = mean(mean(diffusion_y));
+    coeff.x_error = error_factor*std(mean(diffusion_x));
+    coeff.y_error = error_factor*std(mean(diffusion_y));
     
     variance_error_x = error_factor*std(variance_x);
     variance_error_y = error_factor*std(variance_y);
     
-    drift_x = mean(mean(velocity_x));
-    drift_y = mean(mean(velocity_y));
-    drift_error_x = error_factor*std(mean(velocity_x));
-    drift_error_y = error_factor*std(mean(velocity_y));
+    drift.x = mean(mean(velocity_x));
+    drift.y = mean(mean(velocity_y));
+    drift.x_error = error_factor*std(mean(velocity_x));
+    drift.y_error = error_factor*std(mean(velocity_y));
     
     velocity_error_x = error_factor*std(velocity_x);
     velocity_error_y = error_factor*std(velocity_y);
@@ -124,10 +128,10 @@ function analyze_file(filename, filepath, config)
     
     %print results
     fprintf(result_file, 'Results from analyzing %s\n', filename);
-    fprintf(result_file, 'X Diffusion Coefficient:\t%e +/- %e\n',coeff_x,coeff_error_x);
-    fprintf(result_file, 'Y Diffusion Coefficient:\t%e +/- %e\n',coeff_y,coeff_error_y);
-    fprintf(result_file, 'X Systematic Drift:\t\t\t%e +/- %e\n',drift_x,drift_error_x);
-    fprintf(result_file, 'Y Systematic Drift:\t\t\t%e +/- %e\n',drift_y,drift_error_y);
+    fprintf(result_file, 'X Diffusion Coefficient:\t%e +/- %e\n',coeff.x,coeff.x_error);
+    fprintf(result_file, 'Y Diffusion Coefficient:\t%e +/- %e\n',coeff.y,coeff.y_error);
+    fprintf(result_file, 'X Systematic Drift:\t\t\t%e +/- %e\n',drift.x,drift.x_error);
+    fprintf(result_file, 'Y Systematic Drift:\t\t\t%e +/- %e\n',drift.y,drift.y_error);
     
     
     fclose(result_file);
