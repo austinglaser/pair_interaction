@@ -10,7 +10,7 @@ function particle_diffusion(config_file)
                     'x_col',     2;
                     'y_col',     3;
                     'folders',   '';
-                    'n_bins',    1
+                    'binsize',    1000
                   };
 
     config = read_config(config_file,exp_options);
