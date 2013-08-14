@@ -8,25 +8,14 @@ function [coeff,drift] = analyze_file(filename, filepath, config)
     end
     
     result_file = fopen(result_filename, 'w');
-    data_file = fopen(data_filename, 'r');
     
     %load in data
-    deltat = 1/config.framerate;
-    t = [];
-    x = [];
-    y = [];
-    i = 1;
+    delta_t = 1/config.framerate;
     
-    current_line = fgetl(data_file);
-    while ischar(current_line)
-        raw_data = str2num(current_line);
-        t(i) = (raw_data(config.frame_col))*deltat;
-        x(i) = raw_data(config.x_col)*config.x_scale;
-        y(i) = raw_data(config.y_col)*config.y_scale;
-        
-        current_line = fgetl(data_file);
-        i = i + 1;
-    end
+    raw_data = importdata(data_filename);
+    t = (raw_data(:,config.frame_col)')*delta_t;
+    x = (raw_data(:,config.x_col)')*config.x_scale;
+    y = (raw_data(:,config.y_col)')*config.y_scale;
     
     % sort by t
     [t, inds] = sort(t);
@@ -41,22 +30,24 @@ function [coeff,drift] = analyze_file(filename, filepath, config)
     %analyze data
     max_step = 25;
     
-    n_bins = 0;
-    for binend = config.binsize:config.binsize:size(t,2)
-        binstart = binend - (config.binsize - 1);
-        n_bins = n_bins + 1;
-        
-        t_binned(n_bins,:) = t(binstart:binend);
-        x_binned(n_bins,:) = x(binstart:binend);
-        y_binned(n_bins,:) = y(binstart:binend);
-        
-        t_binned(n_bins,:) = t_binned(n_bins,:) - t_binned(n_bins,1);
-        x_binned(n_bins,:) = x_binned(n_bins,:) - x_binned(n_bins,1);
-        y_binned(n_bins,:) = y_binned(n_bins,:) - y_binned(n_bins,1);
-    end
+    n_bins = floor(size(t,2)/config.bin_size);
     
     if (n_bins == 0)
-        error('analyze_file:binsize','Bin size too large; specify size smaller than dataset length');
+        error('analyze_file:bin_size','Bin size too large; specify size smaller than dataset length');
+    end
+    
+    t_binned = zeros(n_bins, config.bin_size);
+    x_binned = zeros(n_bins, config.bin_size);
+    y_binned = zeros(n_bins, config.bin_size);
+    
+    
+    for i = 1:n_bins
+        binstart = (i - 1)*config.bin_size + 1;
+        binend   = i*config.bin_size;
+        
+        t_binned(i,:) = t(binstart:binend) - t(binstart);
+        x_binned(i,:) = x(binstart:binend) - x(binstart);
+        y_binned(i,:) = y(binstart:binend) - y(binstart);
     end
     
     velocity_x = zeros(n_bins,max_step);
@@ -77,7 +68,7 @@ function [coeff,drift] = analyze_file(filename, filepath, config)
             disp_x = endpoint_x - startpoint_x;
             disp_y = endpoint_y - startpoint_y;
             
-            interval = step*(t(2) - t(1));
+            interval = step*delta_t;
             
             offset_x = mean(disp_x);
             offset_y = mean(disp_y);
@@ -135,5 +126,4 @@ function [coeff,drift] = analyze_file(filename, filepath, config)
     
     
     fclose(result_file);
-    fclose(data_file);
 end

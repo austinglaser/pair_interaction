@@ -1,10 +1,9 @@
 function r_s = rand_walk(n_particles, n_steps, t_sample,show_plot)
     n_samples = floor(n_steps/t_sample);
     
-    dr = sqrt(2)/10;
+    dr = sqrt(2)/sqrt(10);
     
     r_s = zeros(n_particles, 2, n_samples);
-    loc = [0 0];
     
     bounds = [-10 10 -10 10];
     

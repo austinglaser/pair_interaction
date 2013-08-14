@@ -10,7 +10,7 @@ function [coeff,drift] = particle_diffusion(config_file)
                     'x_col',     2;
                     'y_col',     3;
                     'folders',   '';
-                    'binsize',    1000
+                    'bin_size',    1000
                   };
 
     config = read_config(config_file,exp_options);
