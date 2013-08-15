@@ -5,10 +5,12 @@ function r_s = rand_walk(n_particles, n_steps, t_sample,show_plot)
     
     r_s = zeros(n_particles, 2, n_samples);
     
+    velocity = logspace(log(0.5)/log(10),log(5)/log(10),n_particles);
+    
     bounds = [-10 10 -10 10];
     
     for i = 1:n_particles 
-        outputfile = fopen(['./tracks/track_' num2str(i)], 'w');
+        outputfile = fopen(sprintf('./tracks/track_%03d',i), 'w');
         
         loc = [0 0];
         if show_plot
@@ -16,7 +18,7 @@ function r_s = rand_walk(n_particles, n_steps, t_sample,show_plot)
             
             frame_samplerate = 1;
         end
-        for t = 2:n_steps
+        for t = 2:(n_steps + 1)
             if mod(t,t_sample) == 0
                r_s(i,:,t/t_sample) = loc;
                fprintf(outputfile, '%d\t%d\t%d\n', t/t_sample, loc);
@@ -34,10 +36,10 @@ function r_s = rand_walk(n_particles, n_steps, t_sample,show_plot)
                 end
             end
             
-            theta = rand(1)*128*pi;
+            theta = rand(1)*2*pi;
 
-            dx = dr*cos(theta);
-            dy = dr*sin(theta);
+            dx = dr*cos(theta) + velocity(i)/(10);
+            dy = dr*sin(theta) + velocity(i)/(10);
 
             loc = loc + [dx dy];
 

@@ -28,7 +28,7 @@ function [coeff,drift] = analyze_file(filename, filepath, config)
     y = y - y(1);
     
     %analyze data
-    n_steps = 25;
+    n_steps = 1;
     
     n_bins = floor(size(t,2)/config.bin_size);
     
@@ -49,41 +49,33 @@ function [coeff,drift] = analyze_file(filename, filepath, config)
         x_binned(i,:) = x(binstart:binend) - x(binstart);
         y_binned(i,:) = y(binstart:binend) - y(binstart);
     end
-    
-    velocity_x = zeros(n_bins,n_steps);
-    velocity_y = zeros(n_bins,n_steps);
-    
-    variance_x = zeros(n_bins,n_steps);
-    variance_y = zeros(n_bins,n_steps);
-    
-    diffusion_x = zeros(n_bins,n_steps);
-    diffusion_y = zeros(n_bins,n_steps);
-    
-    for step = 1:n_steps
-        endpoint_x = x_binned(:,1:step:end);
-        endpoint_y = y_binned(:,1:step:end);
-        startpoint_x = [zeros(n_bins,1) endpoint_x(:,1:(end-1))];
-        startpoint_y = [zeros(n_bins,1) endpoint_y(:,1:(end-1))];
-        disp_x = endpoint_x - startpoint_x;
-        disp_y = endpoint_y - startpoint_y;
 
-        interval = step*delta_t;
+    step = 10;
 
-        offset_x = mean(disp_x,2);
-        offset_y = mean(disp_y,2);
+    endpoint_x = x_binned(:,1:step:end);
+    endpoint_y = y_binned(:,1:step:end);
+    startpoint_x = [zeros(n_bins,1) endpoint_x(:,1:(end-1))];
+    startpoint_y = [zeros(n_bins,1) endpoint_y(:,1:(end-1))];
+    disp_x = endpoint_x - startpoint_x;
+    disp_y = endpoint_y - startpoint_y;
 
-        velocity_x(:,step) = offset_x/interval;
-        velocity_y(:,step) = offset_y/interval;
-        
-        velocity_corrected_x = disp_x - repmat(offset_x,1,size(disp_x,2));
-        velocity_corrected_y = disp_y - repmat(offset_y,1,size(disp_y,2));
+    interval = step*delta_t;
 
-        variance_x(:,step) = var(velocity_corrected_x,[],2);
-        variance_y(:,step) = var(velocity_corrected_y,[],2);
+    offset_x = mean(disp_x,2);
+    offset_y = mean(disp_y,2);
 
-        diffusion_x(:,step) = variance_x(:,step)/(2*interval);
-        diffusion_y(:,step) = variance_y(:,step)/(2*interval);
-    end
+    velocity_x = offset_x/interval;
+    velocity_y = offset_y/interval;
+
+    velocity_corrected_x = disp_x - repmat(offset_x,1,size(disp_x,2));
+    velocity_corrected_y = disp_y - repmat(offset_y,1,size(disp_y,2));
+
+    variance_x = var(velocity_corrected_x,[],2);
+    variance_y = var(velocity_corrected_y,[],2);
+
+    diffusion_x = variance_x/(2*interval);
+    diffusion_y = variance_y/(2*interval);
+
     
     error_factor = 1/sqrt(n_bins);
 
@@ -103,17 +95,17 @@ function [coeff,drift] = analyze_file(filename, filepath, config)
     velocity_error_x = error_factor*std(velocity_x);
     velocity_error_y = error_factor*std(velocity_y);
     
-    figure()
-    
-    subplot(1,2,1)
-    hold all
-    errorbar(mean(velocity_x,1),velocity_error_x,'b.')
-    errorbar(mean(velocity_y,1),velocity_error_y,'g.')
-    
-    subplot(1,2,2)
-    hold all
-    errorbar(mean(variance_x,1),variance_error_x,'b.')
-    errorbar(mean(variance_y,1),variance_error_y,'g.')
+%     figure()
+%     
+%     subplot(1,2,1)
+%     hold all
+%     errorbar(mean(velocity_x,1),velocity_error_x,'b.')
+%     errorbar(mean(velocity_y,1),velocity_error_y,'g.')
+%     
+%     subplot(1,2,2)
+%     hold all
+%     errorbar(mean(variance_x,1),variance_error_x,'b.')
+%     errorbar(mean(variance_y,1),variance_error_y,'g.')
     
     %print results
     fprintf(result_file, 'Results from analyzing %s\n', filename);
