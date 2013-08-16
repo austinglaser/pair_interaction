@@ -1,13 +1,15 @@
 function r_s = rand_walk(n_particles, n_steps, t_sample,show_plot)
     n_samples = floor(n_steps/t_sample);
     
-    dr = sqrt(2)/sqrt(10);
+    dr = 2/sqrt(10);
     
     r_s = zeros(n_particles, 2, n_samples);
     
     velocity = logspace(log(0.5)/log(10),log(5)/log(10),n_particles);
     
     bounds = [-10 10 -10 10];
+    
+    h = waitbar(0, 'Simulating particles...');
     
     for i = 1:n_particles 
         outputfile = fopen(sprintf('./tracks/track_%03d',i), 'w');
@@ -38,8 +40,8 @@ function r_s = rand_walk(n_particles, n_steps, t_sample,show_plot)
             
             theta = rand(1)*2*pi;
 
-            dx = dr*cos(theta) + velocity(i)/(10);
-            dy = dr*sin(theta) + velocity(i)/(10);
+            dx = dr*cos(theta) + velocity(i)/(10*sqrt(2));
+            dy = dr*sin(theta) + velocity(i)/(10*sqrt(2));
 
             loc = loc + [dx dy];
 
@@ -48,9 +50,13 @@ function r_s = rand_walk(n_particles, n_steps, t_sample,show_plot)
                 lim = mag + 0.5;
                 bounds = [-lim lim -lim lim];
             end
+            
+            waitbar((i-1)/n_particles + (1/n_particles)*t/n_steps)
         end
         
-       fclose(outputfile);
+        waitbar(i/n_particles);
+        
+        fclose(outputfile);
     end
     
     if show_plot
@@ -58,4 +64,7 @@ function r_s = rand_walk(n_particles, n_steps, t_sample,show_plot)
         writerObj = VideoWriter('./videos/brownian_walk_example', 'MPEG-4');
         writeVideo(writerObj, walk)
     end
+    
+    waitbar(1);
+    delete(h);
 end

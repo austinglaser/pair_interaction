@@ -1,4 +1,4 @@
-function [coeff,drift] = particle_diffusion(config_file)
+function [coefficient,velocity] = particle_diffusion(config_file)
 %PARTICLE_DIFFUSION Calculate the diffusion of a single particle.
 
     %Load configuration
@@ -29,7 +29,7 @@ function [coeff,drift] = particle_diffusion(config_file)
         
         for j = 1:size(files,1)
             if ~(files(j).isdir)
-                [coeff(num) drift(num)] = analyze_file(files(j).name, path, config);
+                [coefficient(num) velocity(num)] = analyze_file(files(j).name, path, config);
                 num = num + 1;
             end
         end

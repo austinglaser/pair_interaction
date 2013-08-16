@@ -1,4 +1,4 @@
-function [coeff,drift] = analyze_file(filename, filepath, config)
+function [coefficient,velocity] = analyze_file(filename, filepath, config)
     data_filename   = [filepath filename];
     result_folder   = [data_filename '_results/'];
     result_filename = [result_folder filename '_results.txt'];
@@ -27,9 +27,9 @@ function [coeff,drift] = analyze_file(filename, filepath, config)
     x = x - x(1);
     y = y - y(1);
     
-    %analyze data
-    n_steps = 1;
+    r = sqrt(x.^2 + y.^2);
     
+    %analyze data
     n_bins = floor(size(t,2)/config.bin_size);
     
     if (n_bins == 0)
@@ -37,8 +37,7 @@ function [coeff,drift] = analyze_file(filename, filepath, config)
     end
     
     t_binned = zeros(n_bins, config.bin_size);
-    x_binned = zeros(n_bins, config.bin_size);
-    y_binned = zeros(n_bins, config.bin_size);
+    r_binned = zeros(n_bins, config.bin_size);
     
     
     for i = 1:n_bins
@@ -46,74 +45,33 @@ function [coeff,drift] = analyze_file(filename, filepath, config)
         binend   = i*config.bin_size;
         
         t_binned(i,:) = t(binstart:binend) - t(binstart);
-        x_binned(i,:) = x(binstart:binend) - x(binstart);
-        y_binned(i,:) = y(binstart:binend) - y(binstart);
+        r_binned(i,:) = r(binstart:binend) - r(binstart);
     end
 
     step = 10;
 
-    endpoint_x = x_binned(:,1:step:end);
-    endpoint_y = y_binned(:,1:step:end);
-    startpoint_x = [zeros(n_bins,1) endpoint_x(:,1:(end-1))];
-    startpoint_y = [zeros(n_bins,1) endpoint_y(:,1:(end-1))];
-    disp_x = endpoint_x - startpoint_x;
-    disp_y = endpoint_y - startpoint_y;
-
+    endpoint = r_binned(:,1:step:end);
+    startpoint = [zeros(n_bins,1) endpoint(:,1:(end-1))];
+    displacement = endpoint - startpoint;
+    
     interval = step*delta_t;
-
-    offset_x = mean(disp_x,2);
-    offset_y = mean(disp_y,2);
-
-    velocity_x = offset_x/interval;
-    velocity_y = offset_y/interval;
-
-    velocity_corrected_x = disp_x - repmat(offset_x,1,size(disp_x,2));
-    velocity_corrected_y = disp_y - repmat(offset_y,1,size(disp_y,2));
-
-    variance_x = var(velocity_corrected_x,[],2);
-    variance_y = var(velocity_corrected_y,[],2);
-
-    diffusion_x = variance_x/(2*interval);
-    diffusion_y = variance_y/(2*interval);
-
     
-    error_factor = 1/sqrt(n_bins);
-
-    coeff.x = mean(mean(diffusion_x));
-    coeff.y = mean(mean(diffusion_y));
-    coeff.x_error = error_factor*std(mean(diffusion_x));
-    coeff.y_error = error_factor*std(mean(diffusion_y));
+    bin_offset = mean(displacement,2);
+    bin_velocity = bin_offset/interval;
     
-    variance_error_x = error_factor*std(variance_x);
-    variance_error_y = error_factor*std(variance_y);
+    velocity.value = mean(bin_velocity);
+    velocity.error = (1/sqrt(n_bins - 1))*std(bin_velocity,0);
     
-    drift.x = mean(mean(velocity_x));
-    drift.y = mean(mean(velocity_y));
-    drift.x_error = error_factor*std(mean(velocity_x));
-    drift.y_error = error_factor*std(mean(velocity_y));
+    bin_diffusion = var(displacement,0,2);
+    bin_coefficient = bin_diffusion/(4*interval);
     
-    velocity_error_x = error_factor*std(velocity_x);
-    velocity_error_y = error_factor*std(velocity_y);
-    
-%     figure()
-%     
-%     subplot(1,2,1)
-%     hold all
-%     errorbar(mean(velocity_x,1),velocity_error_x,'b.')
-%     errorbar(mean(velocity_y,1),velocity_error_y,'g.')
-%     
-%     subplot(1,2,2)
-%     hold all
-%     errorbar(mean(variance_x,1),variance_error_x,'b.')
-%     errorbar(mean(variance_y,1),variance_error_y,'g.')
+    coefficient.value = mean(bin_coefficient);
+    coefficient.error = (1/sqrt(n_bins - 1))*std(bin_coefficient,0);
     
     %print results
     fprintf(result_file, 'Results from analyzing %s\n', filename);
-    fprintf(result_file, 'X Diffusion Coefficient:\t%e +/- %e\n',coeff.x,coeff.x_error);
-    fprintf(result_file, 'Y Diffusion Coefficient:\t%e +/- %e\n',coeff.y,coeff.y_error);
-    fprintf(result_file, 'X Systematic Drift:\t\t\t%e +/- %e\n',drift.x,drift.x_error);
-    fprintf(result_file, 'Y Systematic Drift:\t\t\t%e +/- %e\n',drift.y,drift.y_error);
-    
+    fprintf(result_file, 'Diffusion Coefficient:\t%e +/- %e\n',coefficient.value,coefficient.error);
+    fprintf(result_file, 'Systematic Drift:\t\t\t%e +/- %e\n',velocity.value,velocity.error);
     
     fclose(result_file);
 end
